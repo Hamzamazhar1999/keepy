@@ -1,0 +1,10 @@
+# Build-time (development) dependencies for Keepy.
+#
+# Keepy has NO runtime dependencies - it uses only the Python standard library
+# (tkinter for the GUI, winsound on Windows). There is intentionally no
+# requirements.txt; nothing needs to be pip-installed just to RUN it:
+#     python keepy.py
+#
+# The single tool below is only needed to package Keepy into a standalone
+# executable (see build.bat / build.sh / Keepy.spec):
+pyinstaller
