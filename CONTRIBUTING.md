@@ -45,7 +45,7 @@ Right-click Keepy for the menu: games, timers, break reminders, mute, the
 End users get a double-click `Keepy.exe`. It is built with PyInstaller:
 
 ```sh
-pyinstaller --onefile --windowed --name Keepy keepy.py
+pyinstaller --onefile --windowed --icon keepy.ico --name Keepy keepy.py
 ```
 
 `--windowed` hides the console window; `tkinter` is bundled automatically and

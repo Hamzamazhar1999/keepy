@@ -8,3 +8,6 @@
 # The single tool below is only needed to package Keepy into a standalone
 # executable (see build.bat / build.sh / Keepy.spec):
 pyinstaller
+
+# Pillow is only needed to (re)generate the icon (tools/make_icon.py).
+pillow

@@ -698,8 +698,7 @@ class DesktopPet:
         to_right = (x1 - cx) >= (cx - x0)            # the farther edge = more travel
         vx = (980 + random.uniform(0, 220)) * (1 if to_right else -1)
         vy = -random.uniform(320, 540)               # up and away
-        self.play(KICK_TUNE)
-        self._launch("kickaway", vx, vy)
+        self._launch("kickaway", vx, vy)             # silent - he does this himself
 
     def _enter_free(self, now):
         """The kicked ball has left the screen - hide it and start relaxing."""
@@ -1013,8 +1012,7 @@ class DesktopPet:
         reach = max(150.0, abs(edge - cx))
         apex = (edge + direction * 20, cy - height)         # far point, up high
         cout = (cx + direction * reach * 0.5, cy - arc)      # the kick's arc
-        self.play(KICK_TUNE)
-        self._launch_loop(kind, start, apex, cout, dur)
+        self._launch_loop(kind, start, apex, cout, dur)      # silent: idle/frantic
 
     def _ball_screen_pos(self):
         """Where the ball currently is, in screen pixels (juggle or loose)."""
@@ -1211,12 +1209,9 @@ class DesktopPet:
                       or (hit_y and ax <= CORNER_BAND))
             # only credit a corner he GLIDED into - not one he was just dragged to
             if corner and now >= self.dvd_corner_until and now >= self.dvd_drag_grace:
-                self.dvd_corners += 1
+                self.dvd_corners += 1                 # DVD is autonomous -> silent
                 self.dvd_corner_until = now + 1.8
-                self.play(OVER_TUNE)
                 self.show_bubble(f"CORNER!! x{self.dvd_corners}", 1.8)
-            elif now >= self.dvd_corner_until:
-                self.play(PAT_TUNE)                  # a little bonk
         self.root.geometry(f"+{int(self.x)}+{int(self.y)}")
 
     def _dvd_pose(self, now, blink):

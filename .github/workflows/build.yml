@@ -25,7 +25,7 @@ jobs:
         run: pip install pyinstaller
 
       - name: Build Keepy.exe
-        run: pyinstaller --onefile --windowed --name Keepy keepy.py
+        run: pyinstaller --onefile --windowed --icon keepy.ico --name Keepy keepy.py
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4

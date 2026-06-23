@@ -54,7 +54,7 @@ REM  --name Keepy : output is named Keepy.exe
 REM  tkinter is bundled automatically; winsound is a builtin (no hidden import
 REM  needed); there are no data files/assets to add.
 echo Running PyInstaller...
-%PY% -m PyInstaller --onefile --windowed --name Keepy keepy.py
+%PY% -m PyInstaller --onefile --windowed --icon keepy.ico --name Keepy keepy.py
 if errorlevel 1 (
     echo [ERROR] PyInstaller build failed.
     pause

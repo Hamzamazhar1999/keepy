@@ -85,7 +85,7 @@ Want to build `Keepy.exe` yourself on Windows? Use [PyInstaller](https://pyinsta
 
 ```bash
 pip install pyinstaller
-pyinstaller --onefile --windowed --name Keepy keepy.py
+pyinstaller --onefile --windowed --icon keepy.ico --name Keepy keepy.py
 ```
 
 The result is a single file at `dist/Keepy.exe`.

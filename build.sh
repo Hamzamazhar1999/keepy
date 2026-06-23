@@ -52,7 +52,7 @@ echo
 #  --name Keepy : output is named Keepy
 #  tkinter is bundled automatically; there are no data files/assets to add.
 echo "Running PyInstaller..."
-"$PY" -m PyInstaller --onefile --windowed --name Keepy keepy.py
+"$PY" -m PyInstaller --onefile --windowed --icon keepy.ico --name Keepy keepy.py
 
 echo
 echo "=== Build complete! ==="

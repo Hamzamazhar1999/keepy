@@ -52,6 +52,7 @@ exe = EXE(
     upx_exclude=[],
     runtime_tmpdir=None,
     console=False,        # --windowed: no console window
+    icon='keepy.ico',
     disable_windowed_traceback=False,
     argv_emulation=False,
     target_arch=None,

@@ -32,3 +32,4 @@ Thumbs.db
 # Keepy writes its per-action custom sounds to ~/.keepy/sounds.json in the user's
 # home directory (NOT inside the repo), so there is nothing to ignore here for
 # runtime config. keepy.py is the only source file and is always tracked.
+keepy.png
