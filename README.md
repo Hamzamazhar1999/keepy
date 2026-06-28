@@ -14,6 +14,8 @@ Keepy is a single Python file drawn entirely in code — no image assets, no thi
 - **Break and timer reminders** — a configurable break interval (default every 30 minutes) plus one-off timers, each with a speech bubble and a sound.
 - **Customizable sounds** — replace the default beeps with your own `.wav` file for any action (pat, kick, volley/goal, miss, game over, break, timer).
 - **Multi-monitor aware** — the ball bounces within whichever monitor Keepy is sitting on, and a frantic timer alert can sweep the ball across every monitor.
+- **Calm mode** — shrinks Keepy down small and tucks him in his corner: no juggling, no wandering, just gentle breathing and the odd blink. For when you want him around but not distracting. The setting is remembered between launches.
+- **Snooze + keep screen awake** — Keepy shrinks and curls up asleep (Zzz), and while he naps he holds your **display and PC awake** (Windows). Handy for keeping a screen — or a remote session — from sleeping. Right-click → **Wake up** to bring him back.
 - **Wander mode** — let Keepy slowly roam around the screen on his own.
 
 ## Install (for normal users — Windows)
@@ -59,6 +61,8 @@ On most systems `tkinter` is included with Python. On some Linux distros you may
 - **Mute / Unmute sounds**
 - **Customize sounds** — pick a custom `.wav` per action (see below)
 - **Wander mode** — let Keepy roam on his own
+- **Calm mode (small, low-key)** — shrink him down and quiet him in the corner (remembered between launches)
+- **Snooze + keep screen awake** — he naps small and keeps your screen/PC from sleeping (Windows); right-click → **Wake up** to return
 - **Quit**
 
 ## Customizing sounds

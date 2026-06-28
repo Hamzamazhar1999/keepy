@@ -343,6 +343,13 @@ class DesktopPet:
         self.sound_cfg = {}              # per-action custom WAV overrides
         self._load_sounds()
 
+        # calm / snooze + keep-awake (he shrinks small + chills in these)
+        self.calm = False                # less-fidgety: small, sits in the corner
+        self.keep_awake = False          # holds the screen/PC awake (Windows)
+        self.size_scale = 1.0            # current draw scale (eased)
+        self.size_target = 1.0           # 1.0 normal, ~0.55 when calm/snoozing
+        self._load_prefs()
+
         # DVD bounce mode
         self.dvd_vx = self.dvd_vy = 0.0
         self.dvd_color = DVD_COLORS[0]
@@ -517,6 +524,16 @@ class DesktopPet:
                 self.next_blink = now + random.uniform(2.5, 6)
         blink = now < self.blink_until
 
+        # he shrinks small in snooze/calm, eased smoothly; full size otherwise
+        shrink = self.mode == "snooze" or (self.calm and self.mode == "idle")
+        self.size_target = 0.55 if shrink else 1.0
+        self.size_scale += (self.size_target - self.size_scale) * 0.12
+
+        if self.mode == "snooze":
+            self.draw(now, self._snooze_pose(now, blink))
+            self.root.after(33, self.animate)
+            return
+
         if self.mode == "penalty" and self.arena is not None:
             self._penalty_update(now)
             self._penalty_draw()
@@ -546,13 +563,17 @@ class DesktopPet:
         self._step_locomotion()
 
         if (self.wander and not self.dragging and not self._modal
-                and self.mode == "idle" and not self.ball_loose):
+                and self.mode == "idle" and not self.ball_loose
+                and not self.calm):                      # calm = stay put in corner
             self.step_wander(now)
 
         self.root.after(33, self.animate)
 
     # ---- idle juggling + fidgets ----------------------------------------
     def _idle_pose(self, now, blink):
+        # calm corner mode: small, no juggling, just breathes + rare glance
+        if self.calm:
+            return self._calm_pose(now, blink)
         # "free" phase: the ball is off-screen, he does ball-free actions
         if self.idle_phase == "free":
             return self._static_pose(now, blink)
@@ -653,6 +674,13 @@ class DesktopPet:
                              ball_dir=ball_dir, foot_tap=foot_tap)
 
     def _start_fidget(self, now):
+        if self.calm:                                # calm: only a rare tiny glance
+            if random.random() < 0.5:
+                self.fidget_kind = "glance"
+                self.fidget_until = now + 0.9
+                self.eye_glance = random.choice((-1, 1))
+            self.next_fidget = now + random.uniform(18, 36)
+            return
         roll = random.random()
         # go FREE: kick the ball off-screen and do ball-free actions
         if roll < 0.30 and self.mode == "idle":
@@ -1659,9 +1687,10 @@ class DesktopPet:
 
     def draw_sprite(self, c, pose):
         kx, ky = pose["kx"], pose["ky"]
-        sxp, syp = S * kx, S * ky
+        z = self.size_scale                          # global shrink (calm/snooze)
+        sxp, syp = S * kx * z, S * ky * z
         bw, bh = GRID_W * sxp, TOTAL_H * syp
-        top_x = self.center_x - bw / 2 + pose["dx"]
+        top_x = self.center_x - bw / 2 + pose["dx"]  # stays centred + on the floor
         top_y = self.foot_bottom - bh + pose["dyoff"]
 
         tint = pose.get("tint")                  # DVD mode recolours him
@@ -1857,9 +1886,104 @@ class DesktopPet:
         self.y += (ty - self.y) * 0.01
         self.root.geometry(f"+{int(self.x)}+{int(self.y)}")
 
+    # ---- calm / snooze / keep-awake --------------------------------------
+    def _prefs_path(self):
+        return os.path.join(os.path.expanduser("~"), ".keepy", "prefs.json")
+
+    def _load_prefs(self):
+        try:
+            with open(self._prefs_path(), "r", encoding="utf-8") as f:
+                self.calm = bool(json.load(f).get("calm", False))
+        except Exception:
+            pass
+
+    def _save_prefs(self):
+        try:
+            p = self._prefs_path()
+            os.makedirs(os.path.dirname(p), exist_ok=True)
+            with open(p, "w", encoding="utf-8") as f:
+                json.dump({"calm": self.calm}, f, indent=2)
+        except Exception:
+            pass
+
+    def _set_keep_awake(self, on):
+        """Hold the display + system awake on Windows (no-op elsewhere)."""
+        self.keep_awake = on
+        try:
+            import ctypes
+            ES_CONTINUOUS = 0x80000000
+            ES_SYSTEM_REQUIRED = 0x00000001
+            ES_DISPLAY_REQUIRED = 0x00000002
+            flags = ES_CONTINUOUS
+            if on:
+                flags |= ES_SYSTEM_REQUIRED | ES_DISPLAY_REQUIRED
+            ctypes.windll.kernel32.SetThreadExecutionState(flags)
+        except Exception:
+            pass
+
+    def _calm_pose(self, now, blink):
+        """Small, sits in the corner: breathes, blinks, the odd glance - no ball."""
+        if not self.react_kind and now >= self.next_fidget:
+            self._start_fidget(now)                  # calm: only a rare tiny glance
+        bob = math.sin(now * 1.4) * 1.2
+        eye_dy = 0.0
+        if self.fidget_kind == "lookdown" and now < self.fidget_until:
+            eye_dy = 0.4
+        return self._mk_pose(now, ky=0.97, dyoff=4 + bob, arm_l=-0.05, arm_r=-0.05,
+                             eye_dy=eye_dy, blink=blink, ball=None, mouth="smile")
+
+    def _snooze_pose(self, now, blink):
+        """Asleep: slumped, eyes shut, gentle breathing, sleepy z's - no ball."""
+        env = 1.0                                    # fully asleep
+        breath = math.sin(now * 2.0) * 1.6
+        return self._mk_pose(now, ky=1 - 0.08 * env, dyoff=6 + breath,
+                             arm_l=-0.1, arm_r=-0.1, blink=True, ball=None,
+                             mouth="smile", zzz=True)
+
+    def start_snooze(self):
+        if self.mode == "rally":
+            self.stop_game()
+        if self.mode == "penalty":
+            self.stop_penalty()
+        if self.mode == "dvd":
+            self.stop_dvd()
+        self._hide_ball()
+        self.loose_kind = None
+        self.idle_phase = "juggle"
+        self.static_queue = []
+        self.mode = "snooze"
+        self._set_keep_awake(True)
+        self.show_bubble("snoozing - keeping the screen awake", 4)
+
+    def stop_snooze(self):
+        self.mode = "idle"
+        self._set_keep_awake(False)
+        self.cycle_start = time.time()
+
+    def toggle_snooze(self):
+        if self.mode == "snooze":
+            self.stop_snooze()
+            self.show_bubble("morning!", 3)
+        else:
+            self.start_snooze()
+
+    def toggle_calm(self):
+        self.calm = not self.calm
+        self._save_prefs()
+        if self.calm:
+            self._hide_ball()
+            self.loose_kind = None
+            self.idle_phase = "juggle"
+            self.show_bubble("calm mode - tucked in the corner", 3)
+        else:
+            self.cycle_start = time.time()
+            self.show_bubble("back to full energy!", 3)
+
     # ---- timers ----------------------------------------------------------
     def tick(self):
         now = time.time()
+        if self.keep_awake:                          # re-assert each second
+            self._set_keep_awake(True)
         if self.break_enabled and now >= self.next_break:
             self.trigger_break()
             self.next_break = now + self.interval * 60
@@ -1874,8 +1998,8 @@ class DesktopPet:
     def _frantic_kick(self, now=None):
         """Loop the ball frantically across EVERY monitor — fires even muted.
         Big, slow, alternating left/right sweeps so it's impossible to miss."""
-        if self.mode in ("penalty", "rally", "dvd"):
-            return
+        if self.mode in ("penalty", "rally", "dvd", "snooze") or self.calm:
+            return                                   # snooze/calm: gentle chime only
         now = now or time.time()
         self._hide_ball()
         self.bx, self.by = self.pethead()            # first sweep starts at the head
@@ -2009,11 +2133,24 @@ class DesktopPet:
                 except tk.TclError:
                     pass
         self.ball_win = self.arena = None
+        self._set_keep_awake(False)              # let the screen sleep again
         self.root.destroy()
 
     def show_menu(self, e):
         now = time.time()
         m = tk.Menu(self.root, tearoff=0)
+        if self.mode == "snooze":                # snoozing: minimal menu
+            m.add_command(label=f"{PET_NAME} - snoozing (screen stays awake)",
+                          state="disabled")
+            m.add_separator()
+            m.add_command(label="Wake up", command=self.toggle_snooze)
+            m.add_separator()
+            m.add_command(label="Quit", command=self.quit)
+            try:
+                m.tk_popup(e.x_root, e.y_root)
+            finally:
+                m.grab_release()
+            return
         if self.mode == "rally":
             m.add_command(
                 label=f"{PET_NAME} - rally x{self.streak}  lives {self.lives}",
@@ -2073,6 +2210,13 @@ class DesktopPet:
         m.add_command(
             label=("[on] Wander mode" if self.wander else "Wander mode"),
             command=self.toggle_wander)
+        m.add_separator()
+        m.add_command(
+            label=("[on] Calm mode (small, low-key)" if self.calm
+                   else "Calm mode (small, low-key)"),
+            command=self.toggle_calm)
+        m.add_command(label="Snooze + keep screen awake",
+                      command=self.toggle_snooze)
         m.add_separator()
         m.add_command(label="Quit", command=self.quit)
         try:
